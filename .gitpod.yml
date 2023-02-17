@@ -1,0 +1,68 @@
+
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: |
+      # bring in secret access tokens from gitpod user dashboard
+      eval $(gp env -e)
+      npm install
+      npm run prepare
+      npm update
+      npm audit fix
+      npm install -g @vue/cli
+      gp sync-done install
+  - init: |
+      echo "Waiting for npm install to complete"
+      gp sync-await install
+    command: |
+      echo "Starting Ambianic UI in dev mode:"
+      npm run serve
+  - init: |
+      echo "Waiting for npm install to complete"
+      gp sync-await install
+      # echo "Waiting for Ambianic UI to start..."
+      # gp await-port 8080 && gp preview $(gp url 8080)/index.html
+    command: |
+      echo "Starting Ambianic PWA testsuite"
+      # need to install cypress here because
+      # it needs system dirs that gitpod deletes on workspace restart
+      # https://community.gitpod.io/t/gitpod-and-cypress-disagree-on-cache/5535
+      npm run test
+  - init: |
+      echo "Waiting for npm install to complete"
+      gp sync-await install
+      # echo "Waiting for Ambianic UI to start.."
+      gp await-port 8080 && gp preview $(gp url 8080)/index.html
+    command: |
+      echo "Starting Cypress in Interactive Mode"
+      npm run cy:open
+  - init: |
+      echo "Waiting for npm install to complete"
+      gp sync-await install
+    command: |
+      echo "Starting http server for local HTML file preview"
+      npm install -g browser-sync
+      npx browser-sync start --watch --directory --server
+
+ports:
+  - port: 8080 # Ambianic UI App
+    onOpen: open-browser
+  - port: 6080 # Cypress Interactive Mode
+  - port: 3000 # Static file serve via Browsersync
+  - port: 3001 # Browsersync dashboard
+  - port: 8888 # Dependencies chart
+  - port: 10000
+    onOpen: ignore
+  - port: 5900
+    onOpen: ignore
+
+
+github:
+  prebuilds:
+    addComment: true
+
+
+vscode:
+  extensions:
+    - octref.vetur
